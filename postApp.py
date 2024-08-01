@@ -138,7 +138,11 @@ if(len(san_pham_dict) !=0 ):
         global cart_data
         ngay_gio_hien_tai = datetime.now()
         ten_file = ngay_gio_hien_tai.strftime("%d_%m_%Y") + ".xlsx"
-        hoa_don_pdf_file = ngay_gio_hien_tai.strftime("%d_%m_%Y_%H_%M_%S") + ".pdf"
+        directory = ngay_gio_hien_tai.strftime("%d_%m_%Y")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        hoa_don_pdf_file = ngay_gio_hien_tai.strftime("%H_%M_%S") + ".pdf"
+        hoa_don_pdf_file = os.path.join(directory, hoa_don_pdf_file)
         ten_sheet = ngay_gio_hien_tai.strftime("%H") + "H"
 
         try:
@@ -182,6 +186,8 @@ if(len(san_pham_dict) !=0 ):
             san_pham_mua = cart_data
             so_tien_giam = data['so_tien_giam']
             san_pham_tra = cart_data_hang_tra
+            cart_data = {}
+            cart_data_hang_tra = {}
 
             tong_tien = 0
             for ma_sp, so_luong_don_gia in san_pham_mua.items():
@@ -246,7 +252,7 @@ if(len(san_pham_dict) !=0 ):
                 sheet.cell(row=row_index, column=8, value=gia_ban_formatted).style = centered_style_new
                 row_index += 1
                 data.append([ "SHOP NGUYEN TRUNG", so_luong_don_gia[0], "- {:,.0f}".format(gia_ban), "- {:,.0f}".format(so_luong_don_gia[0]*gia_ban)])
-            data.append([])
+            data.append(["So luong SP", tong_sp, "", ""])
             data.append(["", "", "Tong:", "{:,.0f}".format(tong_tien)])
             data.append(["", "", "Giam gia:", "{:,.0f}".format(so_tien_giam)])
             data.append(["", "", "Thanh tien:", "{:,.0f}".format(tong_tien-so_tien_giam)])
@@ -263,7 +269,7 @@ if(len(san_pham_dict) !=0 ):
             estimated_height = header_height + table_height + footer_height + 40
             doc = SimpleDocTemplate(
                 hoa_don_pdf_file, 
-                pagesize=(80 * mm, estimated_height),
+                pagesize=(75 * mm, estimated_height),
                 leftMargin=0,  #   lề trái
                 rightMargin=0,  #   lề phải
                 topMargin=0,   #   lề trên
@@ -318,13 +324,13 @@ if(len(san_pham_dict) !=0 ):
 
             command_print(hoa_don_pdf_file)
             try:
-                os.remove(hoa_don_pdf_file)
-                print(f"File {hoa_don_pdf_file} in và xoa thanh cong.")
+                # os.remove(hoa_don_pdf_file)
                 cart_data = {}
                 cart_data_hang_tra = {}
-                return jsonify({'success': 'File đã được in và xóa thành công.'}), 200
+                print(f"File {hoa_don_pdf_file} in và xoa thanh cong.")
             except OSError as e:
                 return jsonify({'error': 'Không thể xóa file'}), 400
+            return jsonify({'success': 'File đã được in và xóa thành công.'}), 200
         except KeyError:
             return jsonify({'error': 'Dữ liệu không hợp lệ'}), 400
 

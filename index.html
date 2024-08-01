@@ -498,17 +498,17 @@
             <div id="sumTotal" class="fixed-total right">Thành tiền: 0VNĐ</div>
         </div>
         <div class="containerNewRight">
-            <button id="btnTT">Thanh toán</button>
-            <button id="btnTTKHD">Thanh toán (Không in hóa đơn)</button>
-            <button id="btnHuy">Hủy</button>
+            <button id="btnTT" type="button">Thanh toán</button>
+            <button id="btnTTKHD" type="button">Thanh toán (Không in hóa đơn)</button>
+            <button id="btnHuy" type="button">Hủy</button>
         </div>
     </div>
 
     <div id="confirmationOverlay" class="overlay">
         <div id="confirmationDialog" class="confirmation-dialog">
             <p>Bạn có chắc chắn muốn xóa sản phẩm này?</p>
-            <button style="background-color: #f35e6d; color: white;" click="confirmDelete()">Xóa</button>
-            <button style="background-color: #0088ff; color: white;" click="cancelDelete()">Hủy</button>
+            <button style="background-color: #f35e6d; color: white;" onclick="confirmDelete()">Xóa</button>
+            <button style="background-color: #0088ff; color: white;" onclick="cancelDelete()">Hủy</button>
         </div>
     </div>
     <div id="formAddNewProduct" class="overlay">
@@ -517,16 +517,32 @@
             <div id="searchfield">
                 <form><input type="text" name="currency" class="biginput" id="autocomplete" autocomplete="off"></form>
             </div><!-- @end #searchfield -->
-            <button style="background-color: #ffee00; color: rgb(0, 0, 0);" click="cancelAddPro()">Hủy</button>
-            <button style="background-color: #0088ff; color: white;" click="addPro()">Xong</button>
+            <button style="background-color: #ffee00; color: rgb(0, 0, 0);" onclick="cancelAddPro()">Hủy</button>
+            <button style="background-color: #0088ff; color: white;" onclick="addPro()">Xong</button>
         </div>
     </div>
     <script>
+        let dataObj = null;
+        let tableFocus = 'tableHangMua';
+        let currentFocus = 0; // Index of the currently focused suggestion
+        var checkReload = false;
+        window.addEventListener('load', () => {
+            checkReload = true;
+            let value = localStorage.getItem('HieuNguyen');
+            console.log(value);
+            if (value != null) {
+                document.getElementById("sumTotal").textContent = value;
+            }
+        });
+        const inputValue = document.getElementById('myInputhangMua');
+        inputValue.value = "";
+        inputValue.focus();
         // Quét mã
         async function handleSubmit(event) {
             event.preventDefault();
             const input = tableFocus === "tableHangMua" ? document.getElementById('myInputhangMua').value : document.getElementById('myInputhangTra').value;
             console.log('QR-INPUT: ' + input);
+
             const obj = { product_id: parseInt(input), quantity: 1, price: 0 };
             let headers = new Headers();
             headers.append('Content-Type', 'application/json');
@@ -547,11 +563,12 @@
                 console.log(data);
                 generateTable(tableFocus);
             }
+            const inputValue = tableFocus === "tableHangMua" ? document.getElementById('myInputhangMua') : document.getElementById('myInputhangTra');
+            inputValue.value = "";
+            inputValue.focus();
         }
-        const input = document.getElementById('myInputhangMua');
-        input.focus();
-    </script>
-    <script>
+
+
         //Nhập số tiền hàng mới
         var currencies = [
             { value: '10K', data: 10000 },
@@ -596,7 +613,6 @@
         ];
         const autocompleteInput = document.getElementById('autocomplete');
 
-        let currentFocus = 0; // Index of the currently focused suggestion
 
         autocompleteInput.addEventListener('keyup', (event) => {
             const inputValue = autocompleteInput.value.toLowerCase();
@@ -699,6 +715,8 @@
             document.getElementById("formAddNewProduct").style.display = "none";
             document.getElementById("confirmationProduct").style.display = "none";
             donGiaInput.value = "";
+            let input = tableFocus === "tableHangMua" ? document.getElementById('myInputhangMua') : document.getElementById('myInputhangTra');
+            input.focus();
         }
         function inputFormatCurrency(input) {
             let value = input.value.replace(/\D/g, '');
@@ -711,8 +729,6 @@
         inputDiscount.addEventListener("input", () => {
             inputFormatCurrency(inputDiscount);
         });
-    </script>
-    <script>
         //SELECT TAB
         function toggleTab(tabId) {
             const tabs = document.querySelectorAll('.tab');
@@ -734,10 +750,7 @@
             }
         }
 
-    </script>
-    <script>
-        let dataObj = null;
-        let tableFocus = 'tableHangMua';
+
         // Function to generate table rows
         async function generateTable(tableId) {
             let headers = new Headers();
@@ -779,7 +792,7 @@
                     } else if (index === 5) {
                         cell.innerHTML = `<img src="icon/delete-left-solid.svg" 
                         id="${row[0]}" 
-                        click="handleDelete(event)" 
+                        onclick="handleDelete(event)" 
                         alt="Xóa" 
                         width="32" 
                         height="32"
@@ -800,12 +813,12 @@
             });
             const editableCells = document.querySelectorAll('.editable-cell');
             editableCells.forEach(cell => {
-                cell.addEventListener('input', (event) => {
+                cell.addEventListener('input', async (event) => {
                     const newValue = event.target.textContent;
                     if (newValue.trim() === '' || !/^\d+$/.test(newValue)) {
                         return;
                     }
-                    updatePro(newValue, event.target.dataset.maSanPham, event.target.dataset.bang);
+                    await updatePro(newValue, event.target.dataset.maSanPham, event.target.dataset.bang);
 
                 });
             });
@@ -841,7 +854,14 @@
         function updateTotal() {
             const totalContainerMua = parseInt(document.getElementById("totalMua").textContent.replaceAll(".", "").split(" ", 100)[1]);
             const totalContainerTra = parseInt(document.getElementById("totalTra").textContent.replaceAll(".", "").split(" ", 100)[1]);
-            const totalSumContainer = document.getElementById("total");;
+            const totalSumContainer = document.getElementById("total");
+            if (checkReload && (totalContainerMua == 0 || isNaN(totalContainerMua)) && (totalContainerTra == 0 || isNaN(totalContainerTra))) {
+                totalSumContainer.textContent = `Tổng cộng: 0 VND`;
+                return;
+            }
+            else if (totalContainerMua != 0 || totalContainerTra != 0) {
+                checkReload = false;
+            }
             const thanhTien = document.getElementById("sumTotal");
             totalSumContainer.textContent = `Tổng cộng: ${formatCurrency(totalContainerMua - totalContainerTra)} VND`;
             const discountSelect = document.getElementById('discountSelect');
@@ -923,8 +943,6 @@
         function formatCurrency(number) {
             return number.toLocaleString('vi-VN'); // Định dạng theo chuẩn Việt Nam
         }
-    </script>
-    <script>
         //Phần thanh toán
         const discountSelect = document.getElementById('discountSelect');
         const customDiscountInput = document.getElementById('customDiscount');
@@ -946,65 +964,73 @@
         const btnTT = document.getElementById('btnTT');
         btnTT.addEventListener('click', () => {
             thanhToan(1);
-            generateTable("tableHangMua");
-            generateTable("tableHangTra");
-
         });
         const btnTTKHD = document.getElementById('btnTTKHD');
         btnTTKHD.addEventListener('click', () => {
             thanhToan(0);
-            generateTable("tableHangMua");
-            generateTable("tableHangTra");
-
+            console.log("ada");
         });
         async function thanhToan(checkPrint) {
-            discount = 0;
-            if (discountSelect.value == 0) {
-                discount = 0;
-            }
-            else if (discountSelect.value == 5) {
-                discount = (totalContainerMua - totalContainerTra) * 5 / 100;
-            }
-            else if (discountSelect.value == 10) {
-                discount = (totalContainerMua - totalContainerTra) * 10 / 100;
-            }
-            else {
-                const customDiscountInput = document.getElementById('customDiscount');
-                const numberInput = parseInt(customDiscountInput.value.replaceAll(".", ""));
-                if (isNaN(numberInput)) {
+            let discount = 0;
+            try {
+                const totalContainerMua = parseInt(document.getElementById("totalMua").textContent.replaceAll(".", "").split(" ", 5)[1]);
+                const totalContainerTra = parseInt(document.getElementById("totalTra").textContent.replaceAll(".", "").split(" ", 5)[1]);
+                const thanhTienTMP = totalContainerMua - totalContainerTra;
+                if (discountSelect.value == 0) {
                     discount = 0;
                 }
-                else {
-                    discount = numberInput;
+                else if (discountSelect.value == 5) {
+                    discount = (thanhTienTMP) * 5 / 100;
                 }
+                else if (discountSelect.value == 10) {
+                    discount = (thanhTienTMP) * 10 / 100;
+                }
+                else {
+                    const customDiscountInput = document.getElementById('customDiscount');
+                    const numberInput = parseInt(customDiscountInput.value.replaceAll(".", ""));
+                    if (isNaN(numberInput)) {
+                        discount = 0;
+                    }
+                    else {
+                        discount = numberInput;
+                    }
+                }
+            } catch (error) {
+                console.log(error);
             }
             url = '';
+            const obj = {
+                so_tien_giam: discount
+            };
             if (checkPrint == 0) {
                 url = 'http://192.168.1.99:8080//api/false';
             }
             else {
                 url = 'http://192.168.1.99:8080//api/true';
             }
-            const obj = {
-                so_tien_giam: discount
-            };
+            localStorage.setItem('HieuNguyen', document.getElementById("sumTotal").textContent);
             let headers = new Headers();
             headers.append('Content-Type', 'application/json');
             headers.append('Accept', 'application/json');
-
-            console.log(url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(obj)
             });
-            if (response.status != 200) {
+            if (await response.status != 200) {
                 console.error("Không call api được");
             } else {
-                generateTable("tableHangMua");
-                generateTable("tableHangTra");
+                // await generateTable("tableHangMua");
+                // await generateTable("tableHangTra");
+                // document.getElementById("sumTotal").textContent = thanhTien;
             }
+
+
         }
+
+        window.onbeforeunload = function (event) {
+            event.preventDefault();
+        };
         async function huyDon() {
             let headers = new Headers();
             headers.append('Content-Type', 'application/json');
